@@ -4,11 +4,40 @@ import functools
 import socket
 import os
 import requests
+import json
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%d"
 
+def send_message_QiYeVX(json_data, useridlist, agentID, corpID, corpSecret): # 默认发送给自己
+    useridstr = "|".join(useridlist)
+    agentid = agentID
 
-def wx_reminder(SCKEY, proxy: str="", remind_started: bool=False):
+    corpid = corpID
+    corpsecret = corpSecret
+    response = requests.get(f"https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={corpid}&corpsecret={corpsecret}")
+    data = json.loads(response.text)
+    access_token = data['access_token']
+
+    json_dict = {
+       "touser" : useridstr,
+       "msgtype" : "text",
+       "agentid" : agentid,
+       "text" : {
+           "content" : json.dumps(json_data)
+       },
+       "safe": 0,
+       "enable_id_trans": 0,
+       "enable_duplicate_check": 0,
+       "duplicate_check_interval": 1800
+    }
+    json_str = json.dumps(json_dict)
+    response_send = requests.post(f"https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={access_token}", data=json_str)
+    return json.loads(response_send.text)['errmsg'] == 'ok'
+
+
+
+
+def wx_reminder(userIdList, agentId, corpId, corpSecret, proxy: str="", remind_started: bool=True):
     """[summary]
     
     Arguments:
@@ -49,10 +78,11 @@ def wx_reminder(SCKEY, proxy: str="", remind_started: bool=False):
                 "desp":content
             }
 
-            url = f"https://sc.ftqq.com/{SCKEY}.send"
+            # url = f"https://sc.ftqq.com/{SCKEY}.send"
 
             if remind_started:
-                requests.post(url, data)
+                # requests.post(url, data)
+                print(send_message_QiYeVX(data, userIdList, agentId, corpId, corpSecret))
 
             try:
                 value = func(*args, **kwargs)
@@ -73,7 +103,8 @@ def wx_reminder(SCKEY, proxy: str="", remind_started: bool=False):
                     "desp":content
                 }
 
-                requests.post(url, data)
+                # requests.post(url, data)
+                print(send_message_QiYeVX(data, userIdList, agentId, corpId, corpSecret))
 
                 return value
 
@@ -99,7 +130,8 @@ def wx_reminder(SCKEY, proxy: str="", remind_started: bool=False):
                     "desp":content
                 }
 
-                requests.post(url, data)
+                # requests.post(url, data)
+                print(send_message_QiYeVX(data, userIdList, agentId, corpId, corpSecret))
                 
                 raise ex
 
